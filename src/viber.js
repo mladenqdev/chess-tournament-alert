@@ -3,6 +3,36 @@ import { config } from './config.js';
 
 const API_BASE = 'https://chatapi.viber.com/pa';
 
+// Will be set on first post by fetching account info
+let adminId = null;
+
+/**
+ * Get the superadmin's member ID (required as 'from' in post requests).
+ */
+async function getAdminId() {
+  if (adminId) return adminId;
+
+  const response = await axios.post(
+    `${API_BASE}/get_account_info`,
+    {},
+    {
+      headers: {
+        'X-Viber-Auth-Token': config.viber.channelToken,
+        'Content-Type': 'application/json',
+      },
+      timeout: 10000,
+    }
+  );
+
+  const members = response.data?.members || [];
+  const superadmin = members.find((m) => m.role === 'superadmin');
+  if (!superadmin) throw new Error('No superadmin found in channel members');
+
+  adminId = superadmin.id;
+  console.log(`[viber] Using admin ID: ${adminId}`);
+  return adminId;
+}
+
 /**
  * Register webhook with Viber (required before posting).
  */
@@ -29,9 +59,12 @@ export async function setupWebhook(webhookUrl) {
  * Send a text message to the Viber Channel.
  */
 export async function postToChannel(text) {
+  const from = await getAdminId();
+
   const response = await axios.post(
     `${API_BASE}/post`,
     {
+      from,
       type: 'text',
       text,
     },

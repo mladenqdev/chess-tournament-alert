@@ -63,8 +63,7 @@ const CITY_COORDS = {
   'bijeljina': { lat: 44.7569, lng: 19.2142 },
 };
 
-// Federations to scrape (SRB + neighbors that could have events within 100km)
-const FEDERATIONS = ['SRB', 'CRO', 'HUN', 'ROU', 'BIH'];
+const FEDERATIONS = ['SRB'];
 
 /**
  * Scrape chess-results.com for nearby rapid tournaments.

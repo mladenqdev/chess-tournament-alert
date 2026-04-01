@@ -3,7 +3,6 @@ import 'dotenv/config';
 export const config = {
   viber: {
     channelToken: process.env.VIBER_CHANNEL_TOKEN,
-    postUrl: 'https://chatapi.viber.com/pa/post',
   },
   location: {
     lat: parseFloat(process.env.HOME_LAT || '45.2671'),

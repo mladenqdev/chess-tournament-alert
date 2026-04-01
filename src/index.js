@@ -40,11 +40,13 @@ app.listen(PORT, async () => {
     console.log('No PUBLIC_URL set — skipping webhook registration (set it after deploy)');
   }
 
-  // Run once on startup
-  console.log('Running initial scrape...');
-  runScrapeAndAlert().catch((err) => {
-    console.error('Initial scrape failed:', err.message);
-  });
+  // Run once on startup (short delay to let webhook register)
+  setTimeout(() => {
+    console.log('Running initial scrape...');
+    runScrapeAndAlert().catch((err) => {
+      console.error('Initial scrape failed:', err.message);
+    });
+  }, 5000);
 
   // Then schedule periodic runs
   cron.schedule(config.cronSchedule, () => {
