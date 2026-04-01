@@ -90,7 +90,7 @@ export async function postToChannel(text) {
 export function formatTournamentAlert(tournament) {
   const lines = [];
 
-  lines.push(`♟ ${tournament.name}`);
+  lines.push(`♟ ${cleanName(tournament.name)}`);
   lines.push('');
 
   if (tournament.city) {
@@ -120,6 +120,17 @@ export function formatTournamentAlert(tournament) {
   lines.push(`Source: ${tournament.source === 'fide' ? 'FIDE Calendar' : 'chess-results.com'}`);
 
   return lines.join('\n');
+}
+
+/**
+ * Strip emojis, special unicode symbols, and excessive whitespace from tournament names.
+ */
+function cleanName(name) {
+  return name
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\u{2B05}-\u{2B07}\u{2B1B}\u{2B1C}\u{2B50}\u{25AA}-\u{25FE}\u{25B6}\u{25C0}\u{23E9}-\u{23FA}\u{2934}\u{2935}]/gu, '')
+    .replace(/[►▶◄☼⓳★⭐⬛⬜♞♖]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 function formatDate(dateStr) {
