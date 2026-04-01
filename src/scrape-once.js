@@ -1,4 +1,3 @@
-import { scrapeFide } from './scrapers/fide.js';
 import { scrapeChessResults } from './scrapers/chess-results.js';
 import { wasAlertSent, markAlertSent } from './db.js';
 import { postToChannel, formatTournamentAlert } from './viber.js';
@@ -7,19 +6,10 @@ import { postToChannel, formatTournamentAlert } from './viber.js';
  * Run a single scrape cycle: fetch tournaments, filter new ones, send alerts.
  */
 export async function runScrapeAndAlert() {
-  const allTournaments = [];
-
-  // Scrape both sources
-  try {
-    const fideTournaments = await scrapeFide();
-    allTournaments.push(...fideTournaments);
-  } catch (err) {
-    console.error('[FIDE] Scrape failed:', err.message);
-  }
+  let allTournaments = [];
 
   try {
-    const crTournaments = await scrapeChessResults();
-    allTournaments.push(...crTournaments);
+    allTournaments = await scrapeChessResults();
   } catch (err) {
     console.error('[chess-results] Scrape failed:', err.message);
   }
