@@ -186,6 +186,15 @@ async function fetchTournamentDetails(link) {
   const isFinished = pageText.includes('Tournament is finished');
   if (isFinished) return null;
 
+  // Only include tournaments starting within the next 30 days
+  if (startDate) {
+    const start = new Date(startDate);
+    const now = new Date();
+    const daysAway = (start - now) / (1000 * 60 * 60 * 24);
+    if (daysAway > 30) return null;
+    if (daysAway < -1) return null; // already started more than a day ago
+  }
+
   // Check distance using city lookup
   const distance = getCityDistance(city);
   if (distance === null || distance > config.location.radiusKm) return null;
