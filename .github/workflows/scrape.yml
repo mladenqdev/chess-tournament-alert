@@ -1,0 +1,35 @@
+name: Scrape and Alert
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # 7am Serbian time (UTC+2)
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: npm install
+
+      - name: Run scraper
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          HOME_LAT: '45.2671'
+          HOME_LNG: '19.8335'
+          RADIUS_KM: '100'
+        run: node src/scrape-once.js
+
+      - name: Commit sent.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/sent.json
+          git diff --staged --quiet || git commit -m "Update sent alerts [skip ci]"
+          git push

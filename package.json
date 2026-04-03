@@ -1,11 +1,9 @@
 {
   "name": "chess-alert-bot",
   "version": "1.0.0",
-  "description": "Chess tournament alert bot for Viber - scrapes FIDE calendar and chess-results.com for nearby tournaments",
-  "main": "src/index.js",
+  "description": "Chess tournament alert bot - scrapes chess-results.com and sends Telegram alerts for nearby rapid/blitz tournaments",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
     "scrape": "node src/scrape-once.js"
   },
   "keywords": [],
@@ -13,10 +11,7 @@
   "license": "MIT",
   "dependencies": {
     "axios": "^1.14.0",
-    "better-sqlite3": "^12.8.0",
     "cheerio": "^1.2.0",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "node-cron": "^4.2.1"
+    "dotenv": "^17.3.1"
   }
 }

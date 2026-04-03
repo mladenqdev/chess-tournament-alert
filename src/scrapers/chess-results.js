@@ -135,11 +135,12 @@ async function fetchTournamentDetails(link) {
 
   const locationRaw = details['location'] || '';
 
-  // Extract dates
+  // Extract dates — can be "2026/04/05" or "2026/03/29 to 2026/04/05"
   const dateStr = details['date'] || '';
-  const dateMatch = dateStr.match(/(\d{4}\/\d{2}\/\d{2})\s*to\s*(\d{4}\/\d{2}\/\d{2})/);
-  const startDate = dateMatch ? dateMatch[1].replace(/\//g, '-') : '';
-  const endDate = dateMatch ? dateMatch[2].replace(/\//g, '-') : '';
+  const rangeMatch = dateStr.match(/(\d{4}\/\d{2}\/\d{2})\s*to\s*(\d{4}\/\d{2}\/\d{2})/);
+  const singleMatch = !rangeMatch && dateStr.match(/(\d{4}\/\d{2}\/\d{2})/);
+  const startDate = rangeMatch ? rangeMatch[1].replace(/\//g, '-') : singleMatch ? singleMatch[1].replace(/\//g, '-') : '';
+  const endDate = rangeMatch ? rangeMatch[2].replace(/\//g, '-') : '';
 
   // Extract time control
   const timeControl = details['time control (standard)'] || details['time control (rapid)'] || details['time control (blitz)'] || '';

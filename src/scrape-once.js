@@ -1,6 +1,6 @@
 import { scrapeChessResults } from './scrapers/chess-results.js';
-import { wasAlertSent, markAlertSent } from './db.js';
-import { postToChannel, formatTournamentAlert } from './viber.js';
+import { loadSentIds, saveSentIds } from './sent-store.js';
+import { sendMessage, formatTournamentAlert } from './telegram.js';
 
 /**
  * Run a single scrape cycle: fetch tournaments, filter new ones, send alerts.
@@ -17,35 +17,34 @@ export async function runScrapeAndAlert() {
   console.log(`[scrape] Total tournaments found: ${allTournaments.length}`);
 
   // Filter out already-sent alerts
-  const newTournaments = allTournaments.filter((t) => !wasAlertSent(t.id));
+  const sentIds = loadSentIds();
+  const newTournaments = allTournaments.filter((t) => !sentIds.has(t.id));
   console.log(`[scrape] New tournaments to alert: ${newTournaments.length}`);
 
   // Send alerts
   for (const tournament of newTournaments) {
     try {
       const message = formatTournamentAlert(tournament);
-      await postToChannel(message);
-      markAlertSent(tournament);
+      await sendMessage(message);
+      sentIds.add(tournament.id);
       console.log(`[alert] Sent: ${tournament.name} (${tournament.city}, ${tournament.distanceKm}km)`);
 
-      // Small delay between messages to avoid rate limiting
+      // Small delay between messages
       await new Promise((r) => setTimeout(r, 1000));
     } catch (err) {
       console.error(`[alert] Failed to send alert for ${tournament.name}: ${err.message}`);
     }
   }
 
-  console.log(`[scrape] Done. ${newTournaments.length} alerts sent.`);
+  // Persist sent IDs
+  saveSentIds(sentIds);
+  console.log(`[scrape] Done. ${newTournaments.length} new alerts sent.`);
 }
 
-// Allow running directly: node src/scrape-once.js
-const isDirectRun = process.argv[1]?.endsWith('scrape-once.js');
-if (isDirectRun) {
-  import('./config.js');
-  runScrapeAndAlert()
-    .then(() => process.exit(0))
-    .catch((err) => {
-      console.error('Fatal error:', err);
-      process.exit(1);
-    });
-}
+// Run directly
+runScrapeAndAlert()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+  });
