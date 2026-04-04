@@ -22,11 +22,13 @@ export async function runScrapeAndAlert() {
   console.log(`[scrape] New tournaments to alert: ${newTournaments.length}`);
 
   // Send alerts
+  let sentCount = 0;
   for (const tournament of newTournaments) {
     try {
       const message = formatTournamentAlert(tournament);
       await sendMessage(message);
       sentIds.add(tournament.id);
+      sentCount++;
       console.log(`[alert] Sent: ${tournament.name} (${tournament.city}, ${tournament.distanceKm}km)`);
 
       // Small delay between messages
@@ -38,7 +40,7 @@ export async function runScrapeAndAlert() {
 
   // Persist sent IDs
   saveSentIds(sentIds);
-  console.log(`[scrape] Done. ${newTournaments.length} new alerts sent.`);
+  console.log(`[scrape] Done. ${sentCount}/${newTournaments.length} alerts sent.`);
 }
 
 // Run directly

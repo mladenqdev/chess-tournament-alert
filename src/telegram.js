@@ -23,10 +23,10 @@ export async function sendMessage(text) {
 export function formatTournamentAlert(tournament) {
   const lines = [];
 
-  lines.push(`♟ <b>${cleanName(tournament.name)}</b>`);
+  lines.push(`♟ <b>${escapeHtml(cleanName(tournament.name))}</b>`);
 
   if (tournament.city) {
-    lines.push(`📍 ${tournament.city}${tournament.country ? `, ${tournament.country}` : ''}`);
+    lines.push(`📍 ${escapeHtml(tournament.city)}${tournament.country ? `, ${escapeHtml(tournament.country)}` : ''}`);
   }
 
   if (tournament.distanceKm !== undefined) {
@@ -41,7 +41,7 @@ export function formatTournamentAlert(tournament) {
   }
 
   if (tournament.timeControl) {
-    lines.push(`⏱ ${tournament.timeControl}`);
+    lines.push(`⏱ ${escapeHtml(tournament.timeControl)}`);
   }
 
   if (tournament.url) {
@@ -51,11 +51,14 @@ export function formatTournamentAlert(tournament) {
   return lines.join('\n');
 }
 
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function cleanName(name) {
   return name
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\u{2B05}-\u{2B07}\u{2B1B}\u{2B1C}\u{2B50}\u{25AA}-\u{25FE}\u{25B6}\u{25C0}\u{23E9}-\u{23FA}\u{2934}\u{2935}]/gu, '')
-    .replace(/[►▶◄☼⓳★⭐⬛⬜♞♖]/g, '')
-    .replace(/[<>&]/g, '') // escape HTML
+    .replace(/[►▶◄☼⓳★⭐⬛⬜♞♖\u{25A0}-\u{25FF}\u{2700}-\u{27BF}]/gu, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
