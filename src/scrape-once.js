@@ -34,7 +34,8 @@ export async function runScrapeAndAlert() {
       // Small delay between messages
       await new Promise((r) => setTimeout(r, 1000));
     } catch (err) {
-      console.error(`[alert] Failed to send alert for ${tournament.name}: ${err.message}`);
+      const detail = err.response?.data?.description || err.message;
+      console.error(`[alert] Failed to send alert for ${tournament.name}: ${detail}`);
     }
   }
 

@@ -45,7 +45,8 @@ export function formatTournamentAlert(tournament) {
   }
 
   if (tournament.url) {
-    lines.push(`🔗 <a href="${tournament.url}">chess-results.com</a>`);
+    const safeUrl = tournament.url.replace(/&/g, '&amp;');
+    lines.push(`🔗 <a href="${safeUrl}">chess-results.com</a>`);
   }
 
   return lines.join('\n');
