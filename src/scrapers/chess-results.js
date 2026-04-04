@@ -160,7 +160,7 @@ async function fetchTournamentDetails(link) {
   }
 
   // Geocode the location and check distance
-  const { city, distance } = await geocodeAndDistance(locationRaw);
+  const { city, distance } = await geocodeAndDistance(locationRaw, link.name);
   if (distance === null) {
     console.log(`[chess-results] No geocode result for "${link.name}" (${locationRaw})`);
     return null;
@@ -186,33 +186,55 @@ async function fetchTournamentDetails(link) {
 
 /**
  * Geocode a location string and calculate distance from home.
- * Tries the full location first, then individual parts.
+ * Tries the full location first, then cleaned/transliterated, then parts, then tournament name.
  */
-async function geocodeAndDistance(location) {
-  if (!location) return { city: '', distance: null };
-
+async function geocodeAndDistance(location, tournamentName) {
   const { lat, lng } = config.location;
 
-  // Try geocoding the full location with "Serbia" appended for accuracy
-  let coords = await geocode(`${location}, Serbia`);
-  if (coords) {
-    const distance = haversineKm(lat, lng, coords.lat, coords.lng);
-    const city = extractCityName(location);
-    return { city, distance };
-  }
-
-  // Try individual parts (split by comma/dash), each with "Serbia"
-  const parts = location.split(/[,\-]/).map((p) => p.trim()).filter(Boolean);
-  for (const part of parts) {
-    coords = await geocode(`${part}, Serbia`);
+  if (location) {
+    // Try geocoding the raw location with "Serbia"
+    let coords = await geocode(`${location}, Serbia`);
     if (coords) {
       const distance = haversineKm(lat, lng, coords.lat, coords.lng);
-      return { city: part, distance };
+      return { city: extractCityName(location), distance };
+    }
+
+    // Try cleaned/transliterated location
+    const cleaned = cleanLocation(location);
+    if (cleaned && cleaned !== location) {
+      coords = await geocode(`${cleaned}, Serbia`);
+      if (coords) {
+        const distance = haversineKm(lat, lng, coords.lat, coords.lng);
+        return { city: cleaned, distance };
+      }
+    }
+
+    // Try individual parts (split by comma/dash), each with "Serbia"
+    const parts = location.split(/[,\-]/).map((p) => transliterate(p).trim()).filter(Boolean);
+    for (const part of parts) {
+      coords = await geocode(`${part}, Serbia`);
+      if (coords) {
+        const distance = haversineKm(lat, lng, coords.lat, coords.lng);
+        return { city: part, distance };
+      }
     }
   }
 
-  console.log(`[chess-results] Could not geocode: "${location}"`);
-  return { city: extractCityName(location), distance: null };
+  // Fallback: try to extract a city name from the tournament name
+  if (tournamentName) {
+    const city = extractCityFromName(tournamentName);
+    if (city) {
+      const coords = await geocode(`${city}, Serbia`);
+      if (coords) {
+        const distance = haversineKm(lat, lng, coords.lat, coords.lng);
+        console.log(`[chess-results] Geocoded "${tournamentName}" via city in name: ${city}`);
+        return { city, distance };
+      }
+    }
+  }
+
+  console.log(`[chess-results] Could not geocode: "${location || tournamentName}"`);
+  return { city: extractCityName(location || ''), distance: null };
 }
 
 /**
@@ -225,6 +247,71 @@ function extractCityName(location) {
     if (!countryNames.includes(part.toLowerCase())) return part;
   }
   return parts[0] || location;
+}
+
+/**
+ * Transliterate Serbian Cyrillic to Latin.
+ */
+const CYR_TO_LAT = {
+  'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Ђ':'Đ','Е':'E','Ж':'Ž','З':'Z','И':'I',
+  'Ј':'J','К':'K','Л':'L','Љ':'Lj','М':'M','Н':'N','Њ':'Nj','О':'O','П':'P','Р':'R',
+  'С':'S','Т':'T','Ћ':'Ć','У':'U','Ф':'F','Х':'H','Ц':'C','Ч':'Č','Џ':'Dž','Ш':'Š',
+  'а':'a','б':'b','в':'v','г':'g','д':'d','ђ':'đ','е':'e','ж':'ž','з':'z','и':'i',
+  'ј':'j','к':'k','л':'l','љ':'lj','м':'m','н':'n','њ':'nj','о':'o','п':'p','р':'r',
+  'с':'s','т':'t','ћ':'ć','у':'u','ф':'f','х':'h','ц':'c','ч':'č','џ':'dž','ш':'š',
+};
+
+function transliterate(text) {
+  return text.replace(/[А-Яа-яЂђЉљЊњЋћЏџ]/g, (ch) => CYR_TO_LAT[ch] || ch);
+}
+
+/**
+ * Clean a location string for geocoding: strip club names, street prefixes, house numbers.
+ */
+function cleanLocation(loc) {
+  let s = transliterate(loc);
+  // Remove chess club prefixes
+  s = s.replace(/\bŠK\b/gi, '').replace(/\bSK\b/gi, '');
+  // Remove street prefixes
+  s = s.replace(/\bul\.\s*/gi, '');
+  // Remove quoted club names like "Radnički"
+  s = s.replace(/"[^"]*"/g, '');
+  // Remove house numbers at end of parts
+  s = s.replace(/\b\d+\s*$/g, '');
+  // Clean up
+  s = s.replace(/[,\s]+$/g, '').replace(/^\s*[,\-]\s*/, '').replace(/\s{2,}/g, ' ').trim();
+  return s;
+}
+
+/**
+ * List of Serbian cities/towns to look for in tournament names as fallback.
+ */
+const SERBIAN_CITIES = [
+  'Beograd','Belgrade','Novi Sad','Niš','Nis','Kragujevac','Subotica','Zrenjanin',
+  'Pančevo','Pancevo','Čačak','Cacak','Novi Pazar','Kraljevo','Smederevo','Leskovac',
+  'Užice','Uzice','Valjevo','Kruševac','Krusevac','Vranje','Šabac','Sabac','Sombor',
+  'Požarevac','Pozarevac','Pirot','Zaječar','Zajecar','Kikinda','Sremska Mitrovica',
+  'Jagodina','Loznica','Prokuplje','Vrnjačka Banja','Vrsac','Vršac','Ruma','Inđija',
+  'Indjija','Stara Pazova','Bačka Palanka','Temerin','Apatin','Kula','Vrbas',
+  'Bečej','Becej','Aranđelovac','Ada','Titel','Futog','Petrovaradin','Sremski Karlovci',
+  'Resavica','Ritisevo','Vidikovac','Voždovac','Vracar','Vračar','Zemun','Rakovica',
+  'Čukarica','Palilula','Zvezdara','Savski Venac','Stari Grad','Obrenovac',
+  'Lazarevac','Mladenovac','Sopot','Grocka','Surčin','Barajevo','Bor','Negotin',
+  'Despotovac','Paraćin','Ćuprija','Aleksinac','Knjaževac','Sokobanja',
+];
+
+const CITIES_LOWER = SERBIAN_CITIES.map((c) => ({ original: c, lower: c.toLowerCase() }));
+
+/**
+ * Try to find a city name in the tournament name.
+ */
+function extractCityFromName(name) {
+  const latinName = transliterate(name).toLowerCase();
+  // Sort by length descending to match longer names first (e.g., "Sremska Mitrovica" before "Ruma")
+  for (const { original, lower } of CITIES_LOWER.sort((a, b) => b.lower.length - a.lower.length)) {
+    if (latinName.includes(lower)) return original;
+  }
+  return null;
 }
 
 function sleep(ms) {
