@@ -84,8 +84,8 @@ async function scrapeFederation(fed) {
 
     if (!isRapid && !isBlitz) return;
 
-    // Skip youth/kids categories
-    if (/deca|decac|devojcic|mladih|kadet/i.test(name)) return;
+    // Skip youth/kids categories (including Serbian declensions)
+    if (/dec[aeiou]|devojc|devojk|mladih|kadet|junior|dece/i.test(name)) return;
 
     tournamentLinks.push({
       id: idMatch[1],
