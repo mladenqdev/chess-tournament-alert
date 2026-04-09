@@ -117,7 +117,9 @@ async function scrapeFederation(fed) {
 }
 
 async function fetchTournamentDetails(link) {
-  const response = await axios.get(link.href, {
+  // Append turdet=YES to get full tournament details (date, location, time control)
+  const detailUrl = link.href.includes('turdet=') ? link.href : `${link.href}&turdet=YES`;
+  const response = await axios.get(detailUrl, {
     timeout: 15000,
     maxRedirects: 5,
     headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
