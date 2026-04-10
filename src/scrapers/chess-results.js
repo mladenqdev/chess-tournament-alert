@@ -196,6 +196,19 @@ async function fetchTournamentDetails(link) {
 async function geocodeAndDistance(location, tournamentName) {
   const { lat, lng } = config.location;
 
+  // First: scan location AND tournament name for known Serbian cities.
+  // This is more reliable than geocoding noisy strings like 'OŠ "Miroslav Antić", ul. ... Futog'.
+  const combined = `${location || ''} ${tournamentName || ''}`;
+  const cityFromText = extractCityFromName(combined);
+  if (cityFromText) {
+    const coords = await geocode(`${cityFromText}, Serbia`);
+    if (coords) {
+      const distance = haversineKm(lat, lng, coords.lat, coords.lng);
+      console.log(`[chess-results] Geocoded via known city: ${cityFromText}`);
+      return { city: cityFromText, distance };
+    }
+  }
+
   if (location) {
     // Try geocoding the raw location with "Serbia"
     let coords = await geocode(`${location}, Serbia`);
@@ -221,19 +234,6 @@ async function geocodeAndDistance(location, tournamentName) {
       if (coords) {
         const distance = haversineKm(lat, lng, coords.lat, coords.lng);
         return { city: part, distance };
-      }
-    }
-  }
-
-  // Fallback: try to extract a city name from the tournament name
-  if (tournamentName) {
-    const city = extractCityFromName(tournamentName);
-    if (city) {
-      const coords = await geocode(`${city}, Serbia`);
-      if (coords) {
-        const distance = haversineKm(lat, lng, coords.lat, coords.lng);
-        console.log(`[chess-results] Geocoded "${tournamentName}" via city in name: ${city}`);
-        return { city, distance };
       }
     }
   }
@@ -313,8 +313,12 @@ const CITIES_LOWER = SERBIAN_CITIES.map((c) => ({ original: c, lower: c.toLowerC
 function extractCityFromName(name) {
   const latinName = transliterate(name).toLowerCase();
   // Sort by length descending to match longer names first (e.g., "Sremska Mitrovica" before "Ruma")
-  for (const { original, lower } of CITIES_LOWER.sort((a, b) => b.lower.length - a.lower.length)) {
-    if (latinName.includes(lower)) return original;
+  const sorted = [...CITIES_LOWER].sort((a, b) => b.lower.length - a.lower.length);
+  for (const { original, lower } of sorted) {
+    // Use word-boundary matching to avoid false positives like "Ada" inside "Jagodina"
+    const escaped = lower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(^|[^a-zčćšđž])${escaped}([^a-zčćšđž]|$)`, 'i');
+    if (regex.test(latinName)) return original;
   }
   return null;
 }
