@@ -84,8 +84,8 @@ async function scrapeFederation(fed) {
 
     if (!isRapid && !isBlitz) return;
 
-    // Skip youth/kids categories (including Serbian declensions)
-    if (/dec[aeiou]|devojc|devojk|mladih|kadet|junior|dece/i.test(name)) return;
+    // Skip youth/kids/school categories and leagues
+    if (/dec[aeiou]|devojc|devojk|mladih|kadet|junior|dece|srednjošk|srednjosk|osnovn|osnovno|škol|skol|liga\b/i.test(name)) return;
 
     tournamentLinks.push({
       id: idMatch[1],
