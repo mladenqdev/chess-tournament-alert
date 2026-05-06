@@ -84,8 +84,9 @@ async function scrapeFederation(fed) {
 
     if (!isRapid && !isBlitz) return;
 
-    // Skip youth/kids/school categories and leagues
-    if (/dec[aeiou]|de[cč]j|devojc|devojk|mladih|kadet|junior|dece|srednjošk|srednjosk|osnovn|osnovno|škol|skol|liga\b/i.test(name)) return;
+    // Skip youth/kids/school categories and leagues (transliterate to catch Cyrillic)
+    const latinName = transliterate(name);
+    if (/dec[aeiou]|de[cč]j|devojc|devojk|mladih|kadet|junior|dece|srednjošk|srednjosk|osnovn|škol|skol|liga\b|prvenstvo.*škol|prvenstvo.*skol/i.test(latinName)) return;
 
     tournamentLinks.push({
       id: idMatch[1],
