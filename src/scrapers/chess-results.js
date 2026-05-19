@@ -86,7 +86,7 @@ async function scrapeFederation(fed) {
 
     // Skip youth/kids/school categories and leagues (transliterate to catch Cyrillic)
     const latinName = transliterate(name);
-    if (/dec[aeiou]|de[cč]j|devojc|devojk|mladih|kadet|junior|dece|srednjošk|srednjosk|osnovn|škol|skol|liga\b|prvenstvo.*škol|prvenstvo.*skol/i.test(latinName)) return;
+    if (/dec[aeiou]|de[cč]j|devojc|devojk|mladih|kadet|junior|dece|srednjošk|srednjosk|osnov[ncaei]|škol|skol|liga\b|ekipn|prvenstvo.*škol|prvenstvo.*skol/i.test(latinName)) return;
 
     tournamentLinks.push({
       id: idMatch[1],
